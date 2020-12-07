@@ -45,13 +45,13 @@ las instrucciones de abajo. Sólo necesitarías descomentarlas.
 # renv::install("patchwork")
 # renv::install("nullabor")
 # renv::install("scales")
-# renv::install('diegovalle/mxmaps')
+#renv::install('diegovalle/mxmaps')
 # renv::install("nleqslv")
 # renv::snapshot()
 
 # Escribe las claves unicas de ambos miembros del equipo, para generar una
 # semilla de numeros aleatorios.
-claves_unicas <- c(1, 2)
+claves_unicas <- c(1, 197860)
 set.seed(min(claves_unicas))
 ```
 
@@ -79,7 +79,7 @@ algún evento binario de interés. En el contexto Bayesiano, hemos utilizado las
 distribuciones Beta, Gamma-Inversa, y Normal para realizar análisis conjugado 
 con estos modelos. 
 
-En este mini-proyecto, ilustraremos otra familia de distribuciones muy cómunes
+En este mini-proyecto, ilustraremos otra familia de distribuciones muy comunes
 en la práctica. En particular, veremos la distribución **Poisson** como un
 modelo de conteo. Es decir, una variable aleatoria Poisson nos sirve para
 modelar el número de ocurrencias de un evento en un periodo (tiempo) o área
@@ -117,6 +117,32 @@ la distribución posterior. ¿Podríamos escribir la media posterior como un
 promedio ponderado entre datos e información previa? ¿Cómo interpretas los
 hiper-parámetros $(\alpha, \beta)?$
 
+*Utilizando la regla de bayes para calcular la posterior, se tiene:*
+$$P(\theta | X) = \frac{P(X | \theta) P(\theta)}{P(X)}$$
+*Sin embargo, sabemos que podemos omitir la constante de proporcionalidad, entonces quedaría:*
+$$P(\theta | X) \propto P(X | \theta) P(\theta)$$
+*Entonces, para calcular la posterior debemos calcular la verosimilitd y la distribución inicial. Sabemos la distribución inicial es una Gamma, por lo tanto:*
+$$P(\theta) \propto \theta^{\alpha - 1} \, e^{-\beta \, \theta} $$
+*Mientras que para la verosimilitud se tiene:*
+$$P(X | \theta) = {\displaystyle \prod_{i=1}^{n} p(y_i | \theta)}
+= {\displaystyle \prod_{i=1}^{n}} \frac{\theta^{y_i} \, e^{-\theta}}{y_i!}
+= \frac{{\displaystyle \prod_{i=1}^{n} \theta^{y_i}} {\displaystyle \prod_{i=1}^{n}e^{-\theta}}}{{\displaystyle \prod_{i=1}^{n}y_i!}}
+\propto {\displaystyle \prod_{i=1}^{n} \theta^{y_i}} {\displaystyle \prod_{i=1}^{n}e^{-\theta}}
+= \theta^{\sum_{i=1}^{n} y_i} e^{-n \theta}$$
+$$\Rightarrow P(X | \theta) \propto \, \theta^{\sum_{i=1}^{n} y_i} e^{-n \theta}$$
+
+*Entonces, la distribución posterior resulta:*
+$$P(\theta | X) \propto \theta^{\alpha - 1} \, e^{-\beta \, \theta} \, \theta^{\sum_{i=1}^{n} y_i} e^{-n \theta} = \theta^{\alpha - 1 + \sum_{i=1}^{n} y_i} e^{-(\beta + n) \, \theta}$$
+*Así, las reglas de actualización:*
+$$\alpha_1 = \alpha + \sum_{i=1}^{n} y_i$$
+$$\beta_1 = \beta + n$$
+*Como la posterior también es una distribución Gamma entonces la media y la varianza resultan:*
+$$\mathbb{E}[\theta | X] = \frac{\alpha + \sum_{i=1}^{n} y_i}{\beta + n} = \frac{\alpha}{\beta + n} + \frac{\sum_{i=1}^{n} y_i}{\beta + n} = \frac{\beta}{\beta + n} \frac\alpha\beta + \frac{n}{\beta + n} \frac{\sum_{i=1}^{n} y_i}{n} = \frac{\beta}{\beta + n} \, \mathbb{E}[\theta] + \frac{n}{\beta + n} \, \bar{y}$$
+*Por lo tanto, sí podemos escribir la media posterior como el promedio ponderado de la media de la distribución previa y la media obtenida de los datos. Mientras que para la varianza:*
+$$\mathbb{V}[\theta] = \frac{\alpha + \sum_{i=1}^{n} y_i}{(\beta + n)^2}$$
+
+*DUDA*
+*NO SË QUE REPRESENTAN ALPHA Y BETA, exitos y fracasos?...*
 ---
 
 Otra variable aleatoria de conteo relevante es la **Binomial Negativa.** Esta 
@@ -133,8 +159,8 @@ $$ p(X = k \, | \, \alpha, \beta) = {\alpha + k -1 \choose k} \left(\frac{\beta}
 Nota que 
 $${\alpha + k -1 \choose k} = {\alpha + k -1 \choose \alpha -1},$$
 es decir, el número de formas que puedes acomodar $\alpha - 1$ fracasos es igual al
-número de formas que puedes acomodar $k$ éxitos cuando realizaste $\alpha + k
--1$ experimentos y todos los experimentos son independientes. Por otro lado, la
+número de formas que puedes acomodar $k$ éxitos cuando realizaste $\alpha + k-1$
+experimentos y todos los experimentos son independientes. Por otro lado, la
 definición es
 $${\alpha + k -1 \choose k} = \frac{(\alpha + k - 1)!}{k! \, (\alpha - 1)!}.$$
 donde $k! = k \times k-1 \times k-2 \times \cdots \times 1,$ y la función Gamma satisface
@@ -157,10 +183,10 @@ $$ p(y) = \frac{p(y|\theta)p(\theta)}{p(\theta|y)}.$$
 ---
 
 En la práctica, es útil extender el modelo Poisson como sigue
-\begin{align}
+$$\begin{align}
   x_i | t_i, \theta &\sim \textsf{Poisson}(\lambda_i), \\
   \lambda_i &= t_i \theta, 
-\end{align}
+\end{align}$$
 
 donde la tasa de ocurrencia $\lambda_i$ ha sido descompuesta en un producto que
 incorpora la exposición $t_i$ y una tasa de ocurrencia por unidades expuestas
