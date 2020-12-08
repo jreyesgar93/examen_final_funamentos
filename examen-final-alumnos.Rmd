@@ -223,6 +223,25 @@ elijas. Encontrarás en los archivos en `datos/poblacion/defunciones/<año>` los
 registros de defunciones por Neumonía para el `<año>` que escojas.
 
 ```{r carga defunciones de un año}
+anio<-2019
+path<-paste("datos_examen/poblacion/defunciones/",anio,"/defunciones_registradas.csv",sep="")
+defunciones<-read_csv(path)
+
+defunciones_tran<-defunciones
+defunciones_tran$contador<-1      
+
+
+defunciones_tran<-defunciones_tran%>%
+                      select(entidad,municipio,edad_grupos,contador)%>%
+                      pivot_wider(id_cols=c("entidad","municipio"),
+                                  names_from="edad_grupos",
+                                  names_prefix="muertos_neumonia_",
+                                  values_from="contador",
+                                  values_fn=sum)
+
+
+defunciones_tran
+defunciones
 
 ```
 
@@ -233,7 +252,12 @@ para calcular el tamaño de la población en cada uno de los municipios.
 
 
 ```{r carga demograficos}
-
+path_dem<-"datos_examen/poblacion/demograficos/poblacion_municipios_edad.csv"
+demograficos<-read_csv(path_dem)
+#colnames(demograficos)<-c("entidad","nom_ent", "municipio","nom_mun","[0,3)" ,"[3,6)",  "[6,12)", "[12,18)",  "[18,25)",  "[25,64)" , "[64,Inf]")
+demograficos<-demograficos%>%
+                    mutate(pob_total=p_0a2+p_3a5+p_6a11+p_12a17+p_18a24+p_25a64+pob65_mas)
+demograficos
 ```
 
 **Pregunta 6)** Ahora necesitamos *cruzar* las tablas de defunciones y población para crear una 
@@ -242,6 +266,8 @@ tabla con ambos registros. Para esto necesitarás la función `dplyr::full_join`
 
 ```{r cruce defunciones y poblacion}
 
+
+full_join(demograficos,defunciones_tran,by=c("entidad","municipio"))
 
 ```
 
@@ -255,6 +281,31 @@ defunciones totales de los 5 años por municipio.
 
 
 ```{r carga masiva, echo = FALSE, message = FALSE, warning = FALSE}
+
+anio<-2019
+path<-paste("datos_examen/poblacion/defunciones/",anio,"/defunciones_registradas.csv",sep="")
+defunciones_total<-read_csv(path)
+
+for(i in c(2015:2018)){
+  anio<-i
+  path<-paste("datos_examen/poblacion/defunciones/",anio,"/defunciones_registradas.csv",sep="")
+  df<-read_csv(path)
+  defunciones_total<-bind_rows(defunciones_total,df)
+}
+  
+
+defunciones_total$contador<-1      
+
+defunciones_total<-defunciones_total%>%
+                      select(entidad,municipio,edad_grupos,contador)%>%
+                      pivot_wider(id_cols=c("entidad","municipio"),
+                                  names_from="edad_grupos",
+                                  names_prefix="muertos_neumonia_",
+                                  values_from="contador",
+                                  values_fn=sum)
+  
+datos<-full_join(demograficos,defunciones_total,by=c("entidad","municipio"))
+datos
 
 ```
 
