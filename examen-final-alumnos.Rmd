@@ -267,7 +267,7 @@ tabla con ambos registros. Para esto necesitarás la función `dplyr::full_join`
 ```{r cruce defunciones y poblacion}
 
 
-full_join(demograficos,defunciones_tran,by=c("entidad","municipio"))
+dplyr::full_join(demograficos,defunciones_tran,by=c("entidad","municipio"))
 
 ```
 
@@ -346,11 +346,37 @@ con las tasas mas altas y cuáles son los que tienen las mas bajas. Al final,
 podrías presentar esto como dos mapas separados.
 
 
-
 ```{r}
+# año 2019
 
+defunciones_tran_2019 <- defunciones_tran %>%
+  mutate(muertes_totales = rowSums(defunciones_tran %>% select_if(is.numeric), na.rm = TRUE))
+
+tasas_mort <- dplyr::full_join(demograficos,defunciones_tran_2019,by=c("entidad","municipio")) %>%
+  select(entidad, municipio, pob_total, muertes_totales) %>%
+  unite(col = region, seq(1:2), sep = "") %>%
+  mutate(value = muertes_totales / pob_total) %>%
+  replace_na(list(value = 0)) %>%
+  select(region, value)
+
+tasas_mort
 
 ```
+
+```{r, warning=FALSE}
+#calcular el 25% más bajo
+q1 <- quantile(tasas_mort$value)[2]
+q3 <- quantile(tasas_mort$value)[4]
+
+tasas_25_bajo <- tasas_mort[tasas_mort$value <= q1,] %>% mutate(value = TRUE)
+tasas_25_alto <- tasas_mort[tasas_mort$value >= q3,] %>% mutate(value = TRUE)
+
+mxmaps::mxmunicipio_choropleth(tasas_25_bajo,
+                               title = "Municipios con tasas de mortalidad por neumonía más bajas en el año 2019")
+mxmaps::mxmunicipio_choropleth(tasas_25_alto,
+                               title = "Municipios con tasas de mortalidad por neumonía más altas en el año 2019")
+```
+
 
 ¿Qué observas? No hay patrón tan claro. Especialmente si observamos lo que
 sucede en Chihuahua, Durango y Coahuila, donde tenemos municipios de ambas
