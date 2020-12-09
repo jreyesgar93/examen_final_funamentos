@@ -388,9 +388,8 @@ defunciones_tran_2019 <- defunciones_tran %>%
 tasas_mort <- dplyr::full_join(demograficos,defunciones_tran_2019,by=c("entidad","municipio")) %>%
   select(entidad, municipio, pob_total, muertes_totales) %>%
   unite(col = region, seq(1:2), sep = "") %>%
-  mutate(value = muertes_totales / pob_total) %>%
-  replace_na(list(value = 0)) %>%
-  select(region, value)
+  mutate(value = muertes_totales / pob_total)# %>%
+  #replace_na(list(value = 0)) 
 
 tasas_mort
 
@@ -467,10 +466,9 @@ no lineales por medio de la función `nleqslv::nleqslv`. Escribe tu razonamiento
 para seleccionar dichos valores. 
 
 ```{r elicitacion}
-limits <- c(min(tasas_mort$value),max(tasas_mort$value))
+limits <- c(1,3.4)
 
-
-pcota<-0
+pcota<-.5
 
 gamma.limits <- function(x){
   # reparametrizamos para que el problema sea mas "fácil" en términos numéricos.
@@ -478,18 +476,19 @@ gamma.limits <- function(x){
   log_beta  <- x[2]
   
   # definimos las cotas de probabilidad
-  p_cota <-pcota# define un valor adecuada
+  p_cota <-0.25# define un valor adecuada
    c(    pgamma(limits[1], exp(log_alpha), rate = exp(log_beta)) - p_cota,
     1 - pgamma(limits[2], exp(log_alpha), rate = exp(log_beta)) - p_cota)
 }
 
-initial_guess <- c(log(1), log(1))
+initial_guess <- c(log(2), log(2))
 
 results <- nleqslv(initial_guess, gamma.limits)
 
 params.prior <- exp(results$x)
 
 params.prior
+gamma.limits(c(params.prior[1],params.prior[2]))
 ```
 
 **Pregunta 10)** Grafica los histogramas de una variable aleatoria Gamma con los valores
@@ -497,8 +496,14 @@ iniciales para el problema de optimización y con los finales de dicho algorimo.
 Esto te servirá de verificación que el método funciona adecuadamente.
 
 ```{r histogramas elicitacion}
-gamma.inicial<-map_dbl(1:1000,rgamma(initial_guess[1],initial_guess[1]))
-gamma.final<-map_dbl(rgamma(params.prior[1],params.prior[1]),1:1000)
+gamma.inicial<-rgamma(1000,exp(initial_guess[1]),exp(initial_guess[1]))
+gamma.final<-rgamma(1000,params.prior[1],params.prior[1])
+
+ggplot() +
+geom_histogram(aes(x = gamma.inicial), fill = 'salmon', alpha = .6) +
+geom_histogram(aes(x = gamma.final), fill = '#00BFC4', alpha = .6) 
+ggplot() +
+geom_histogram(aes(x = gamma.final), fill = '#00BFC4', alpha = .6) 
 
 ```
 
@@ -509,7 +514,9 @@ ver que nuestras creencias iniciales se ven coherentes.
 
 ```{r}
 
-
+ggplot() +
+geom_histogram(aes(x = gamma.final), fill = '#00BFC4', alpha = .6) +
+geom_histogram(aes(x = tasas_mort$value*10000,na.rm=TRUE), alpha = .6)
 ```
 
 **Pregunta 12)** Utiliza un gráfico de dispersión para comparar las tasas
@@ -518,7 +525,7 @@ escala logaritmica. Para esto checa la función: `ggplot2::scale_x_log10` y
 `ggplot2::scale_y_log10`
 
 ```{r}
-
+ggplot(tasas_mort,aes(x=value*10000,y=pob_total))+geom_point()+scale_y_log10()+scale_x_log10()
 ```
 
 **Pregunta 13)** Ahora usaremos la distribución predictiva **previa** para explorar 
