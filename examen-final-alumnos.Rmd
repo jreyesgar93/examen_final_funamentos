@@ -178,6 +178,8 @@ utiliza
 
 $$ p(y) = \frac{p(y|\theta)p(\theta)}{p(\theta|y)}.$$
 
+
+
 ¿Qué distribución marginal tiene $y$ bajo el modelo conjugado?
 
 ---
@@ -196,12 +198,37 @@ personas que se enferman de gripe en la $i$-ésima ciudad en un año, entonces $
 denota la tasa anual por persona de enfermarse de gripe en una población de tamaño
 $t_i$.
 
+
 --- 
 
 **Pregunta 3)** Supongamos que tenemos datos $X_1, \ldots, X_n \sim
 \textsf{Poisson}(\lambda_i),$ con $\lambda_i = t_i \theta$ para $i = 1, \ldots,
 n.$ Utilizando el modelo conjugado, ¿cuál es la distribución posterior de
 $\theta?$
+
+
+
+$$ p(X = k \, | \, \theta,t_i) = \frac{(\theta t_i)^k \, e^{-\theta t_i}}{k!},$$
+
+$$ p(\theta) \propto \theta^{\alpha - 1} \, e^{-\beta \, \theta},$$
+
+
+$$P(X | \theta) = {\displaystyle \prod_{i=1}^{n} p(y_i | \theta)}
+= {\displaystyle \prod_{i=1}^{n}} \frac{(\theta t_i)^{y_i} \, e^{-(\theta t_i)}}{y_i!}
+= \frac{{\displaystyle \prod_{i=1}^{n} (\theta t_i)^{y_i}} {\displaystyle \prod_{i=1}^{n}e^{-(\theta t_i)}}}{{\displaystyle \prod_{i=1}^{n}y_i!}} \propto \theta^n \prod_{i=1}^{n} t_i^{y_i}e^{-\theta\sum^n_{i=1}t_i}
+$$
+
+
+$$P(\theta | X,T)\propto\theta^n \prod_{i=1}^{n} t_i^{y_i}e^{-\theta\sum^n_{i=1}t_i}\theta^{\alpha - 1} \, e^{-\beta \, \theta}=
+\prod_{i=1}^{n} t_i^{y_i}\theta^{\alpha +n - 1}e^{- \theta(\beta +\sum^n_{i=1}t_i )}
+
+$$
+La distribución posterior de $\theta|X,T \propto Gamma(\alpha',\beta')$ con
+
+
+$$\alpha'=\alpha+n$$
+$$\beta'=\beta+\sum^n_{i=1}t_i$$
+
 
 ---
 
@@ -327,6 +354,12 @@ observado para la población del municipio $i$-ésimo.
 
 **Pregunta 8)** ¿Cómo escribirías $\lambda_i$ en función de $\theta_i$?
 
+
+$$\lambda_i=\theta_i n_i$$
+donde $\theta_i$ es igual a la tasa individual de mortalidad por año en el municipio $i$ y $n_i$ la población total del municipio $i$. Al multiplicar ambas, obtenemos valor de $\lambda_i$ que representala tasa de mortalidad por neumonía en el municipio $i$
+
+
+
 Ahora, utilizaremos un mapa para ver si podemos observar algún patrón en las
 tasas de mortalidad por individuo por año $\theta_i.$ Por ejemplo, podríamos
 esperar que algunas zonas del país concentren las tasas mas altas. Por ejemplo,
@@ -375,6 +408,10 @@ mxmaps::mxmunicipio_choropleth(tasas_25_bajo,
                                title = "Municipios con tasas de mortalidad por neumonía más bajas en el año 2019")
 mxmaps::mxmunicipio_choropleth(tasas_25_alto,
                                title = "Municipios con tasas de mortalidad por neumonía más altas en el año 2019")
+
+
+mxmaps::mxmunicipio_choropleth(tasas_mort,
+                               title = "Municipios con tasas de mortalidad por neumonía el año 2019",num_colors=4)
 ```
 
 
@@ -430,7 +467,10 @@ no lineales por medio de la función `nleqslv::nleqslv`. Escribe tu razonamiento
 para seleccionar dichos valores. 
 
 ```{r elicitacion}
-limits <- # escribe los intervalos adecuados aqui
+limits <- c(min(tasas_mort$value),max(tasas_mort$value))
+
+
+pcota<-0
 
 gamma.limits <- function(x){
   # reparametrizamos para que el problema sea mas "fácil" en términos numéricos.
@@ -438,8 +478,8 @@ gamma.limits <- function(x){
   log_beta  <- x[2]
   
   # definimos las cotas de probabilidad
-  p_cota <- # define un valor adecuada
-  c(    pgamma(limits[1], exp(log_alpha), rate = exp(log_beta)) - p_cota,
+  p_cota <-pcota# define un valor adecuada
+   c(    pgamma(limits[1], exp(log_alpha), rate = exp(log_beta)) - p_cota,
     1 - pgamma(limits[2], exp(log_alpha), rate = exp(log_beta)) - p_cota)
 }
 
@@ -449,6 +489,7 @@ results <- nleqslv(initial_guess, gamma.limits)
 
 params.prior <- exp(results$x)
 
+params.prior
 ```
 
 **Pregunta 10)** Grafica los histogramas de una variable aleatoria Gamma con los valores
@@ -456,7 +497,8 @@ iniciales para el problema de optimización y con los finales de dicho algorimo.
 Esto te servirá de verificación que el método funciona adecuadamente.
 
 ```{r histogramas elicitacion}
-
+gamma.inicial<-map_dbl(1:1000,rgamma(initial_guess[1],initial_guess[1]))
+gamma.final<-map_dbl(rgamma(params.prior[1],params.prior[1]),1:1000)
 
 ```
 
