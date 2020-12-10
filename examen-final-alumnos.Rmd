@@ -119,10 +119,13 @@ hiper-parámetros $(\alpha, \beta)?$
 
 *Utilizando la regla de bayes para calcular la posterior, se tiene:*
 $$P(\theta | X) = \frac{P(X | \theta) P(\theta)}{P(X)}$$
-*Sin embargo, sabemos que podemos omitir la constante de proporcionalidad, entonces quedaría:*
+*Como sabemos que podemos omitir la constante de proporcionalidad, entonces quedaría:*
 $$P(\theta | X) \propto P(X | \theta) P(\theta)$$
 *Entonces, para calcular la posterior debemos calcular la verosimilitd y la distribución inicial. Sabemos la distribución inicial es una Gamma, por lo tanto:*
 $$P(\theta) \propto \theta^{\alpha - 1} \, e^{-\beta \, \theta} $$
+*Revisando las notas de clase (15-02-fundamentos-estadistica.pdf) encontramos las constantes de la función de densidad de la distribución Gamma:*
+$$P(\theta) = \frac{\beta^{\alpha}}{\Gamma(\alpha)} \theta^{\alpha - 1} \, e^{-\beta \, \theta}$$
+
 *Mientras que para la verosimilitud se tiene:*
 $$P(X | \theta) = {\displaystyle \prod_{i=1}^{n} p(y_i | \theta)}
 = {\displaystyle \prod_{i=1}^{n}} \frac{\theta^{y_i} \, e^{-\theta}}{y_i!}
@@ -173,14 +176,35 @@ la **distribución predictiva previa** para una observación Poisson. Es decir,
 calcula 
 $$p(y) = \int \textsf{Poisson}(y \,| \,\theta) \textsf{Gamma}(\theta \, | \, \alpha, \beta) \, \text{d}\theta.$$
 
+*Sustituyendo las funciones de densidad de probabilidad de cada una de las distribuciones:*
+$$p(y)
+= \int \frac{\theta^k \, e^{-\theta}}{k!} \frac{\beta^{\alpha}}{\Gamma(\alpha)} \theta^{\alpha - 1} \, e^{-\beta \, \theta} d\theta
+= \frac{\beta^{\alpha}}{\Gamma(\alpha)k!} \int \theta^k \, e^{-\theta} \theta^{\alpha - 1} \, e^{-\beta \, \theta} d\theta
+= \frac{\beta^{\alpha}}{\Gamma(\alpha)k!} \int \theta^{\alpha + k -1} \, e^{-(\beta+1)\theta} d\theta$$
+*La última igualdad tiene la forma de una distribución Gamma con parámetros:*
+$$\alpha' = \alpha + k$$
+$$\beta' = \beta + 1$$
+*Sólo falta añadirle las constantes:*
+$$p(y) = \frac{\beta^{\alpha}}{\Gamma(\alpha)k!} \int \theta^{\alpha + k -1} \, e^{-(\beta+1)\theta} d\theta = \frac{\beta^{\alpha}}{\Gamma(\alpha)k!} \int \frac{(\beta+1)^{\alpha+k}}{\Gamma(\alpha+k)} \frac{\Gamma(\alpha+k)}{\beta+1)^{\alpha+k}} \theta^{\alpha - 1} \, e^{-\beta \, \theta} d\theta$$
+$$\Rightarrow p(y) = \frac{\beta^{\alpha}}{\Gamma(\alpha)k!} \frac{\Gamma(\alpha+k)}{(\beta+1)^{\alpha+k}} \int \frac{(\beta+1)^{\alpha+k}}{\Gamma(\alpha+k)} \theta^{\alpha - 1} \, e^{-\beta \, \theta} d\theta = \frac{\beta^{\alpha}}{\Gamma(\alpha)k!} \frac{\Gamma(\alpha+k)}{(\beta+1)^{\alpha+k}} \int \textsf{Gamma}(\theta \, | \, \alpha', \beta') d\theta$$
+$$\Rightarrow p(y) = \frac{\beta^{\alpha}}{(\beta+1)^{\alpha+k}} \frac{\Gamma(\alpha+k)}{\Gamma(\alpha)k!} \int \textsf{Gamma}(\theta \, | \, \alpha', \beta') d\theta = \left(\frac{\beta}{\beta + 1}\right)^\alpha \left(\frac{1}{\beta + 1}\right)^k \frac{(\alpha+k-1)!}{(\alpha-1)!k!} \int \textsf{Gamma}(\theta \, | \, \alpha', \beta') d\theta$$
+*Finalmente,*
+$$\Rightarrow p(y) = {\alpha + k -1 \choose k} \left(\frac{\beta}{\beta + 1}\right)^\alpha \left(\frac{1}{\beta + 1}\right)^k \int \textsf{Gamma}(\theta \, | \, \alpha', \beta') d\theta$$
+*Por lo tanto, la distribución predictiva previa de una distribución Poisson-Gamma es una Bonimial Negativa.*
+
 Verifica tu cálculo utilizando las reglas probabilidad condicional. En especifico,
 utiliza
 
 $$ p(y) = \frac{p(y|\theta)p(\theta)}{p(\theta|y)}.$$
-
-
+*Teniendo en cuenta que para calcular la posterior se usó la distribución Gamma con las reglas de actualización para una y:*
+$$\alpha_1 = \alpha + y$$
+$$\beta_1 = \beta + 1$$
+*Entonces podemos sustituir en la regla de bayes nuestros resultados anteriores, tomando y = k.*
+$$p(y) = \frac{\frac{\theta^k \, e^{-\theta}}{k!} \, \frac{\beta^{\alpha}}{\Gamma(\alpha)} \theta^{\alpha - 1} \, e^{-\beta \, \theta}}{\frac{(\beta+1)^{\alpha+k}}{\Gamma(\alpha+k)}\theta^{\alpha - 1 + k} \, e^{-(\beta + 1) \, \theta}} = \frac{\beta^{\alpha}\,\Gamma(\alpha+k)}{(\beta+1)^{\alpha+k}\,\Gamma(\alpha)\,k!} \frac{\theta^k \, e^{-\theta}\theta^{\alpha - 1} \, e^{-\beta \, \theta}}{\theta^{\alpha - 1 + k} \, e^{-(\beta + 1) \, \theta}} = \frac{\beta^{\alpha}\,\Gamma(\alpha+k)}{(\beta+1)^{\alpha+k}\,\Gamma(\alpha)\,k!} \frac{\theta^k \, \theta^{\alpha - 1}}{\theta^{\alpha - 1 + k}} = \frac{\beta^{\alpha}\,\Gamma(\alpha+k)}{(\beta+1)^{\alpha+k}\,\Gamma(\alpha)\,k!}$$
+$$\Rightarrow p(y) = \left(\frac{\beta}{\beta + 1}\right)^\alpha \left(\frac{1}{\beta + 1}\right)^k \frac{(\alpha+k-1)!}{(\alpha-1)!\,k!} = \left(\frac{\beta}{\beta + 1}\right)^\alpha \left(\frac{1}{\beta + 1}\right)^k {\alpha + k -1 \choose k}$$
 
 ¿Qué distribución marginal tiene $y$ bajo el modelo conjugado?
+*Una Binomial Negativa*
 
 ---
 
