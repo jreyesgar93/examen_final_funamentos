@@ -490,12 +490,12 @@ no lineales por medio de la función `nleqslv::nleqslv`. Escribe tu razonamiento
 para seleccionar dichos valores. 
 
 ```{r elicitacion}
-limits <- c(0.5,5)
+limits <- c(0.1,0.5)
 
 pcota <- 0.05
 ```
 
-*Los límites se escogieron tomando en cuenta la información de la gráfica. Para el límite inferior se escogió el 5 pues existen países como Estonia donde la tasa de defunción por neumonía es muy baja y para el límite superior se escogió 50 pues a principios de los años 2000 la tasa de defunciones por neumonía en América Latina y el Caribe superaba las 40 muertes por 100 mil habitantes. También realizamos un reescalamiento de las tasas para no ocupar el valor real pues este resultaría muy pequeño y esto generaría errores en el proceso de optimización. Además, fijamos la pcota en 5% pues creemos que esto es cercano a la probabilidad de que la tasa de mortalidad esté fuera de este rango.*
+*Los límites se escogieron tomando en cuenta la información de la gráfica. En un principio, para el límite inferior se escogió el 5 pues existen países como Estonia donde la tasa de defunción por neumonía es muy baja y para el límite superior se escogió 50 pues a principios de los años 2000 la tasa de defunciones por neumonía en América Latina y el Caribe superaba las 40 muertes por 100 mil habitantes. Sin embargo, cómo tratamos de estimar las tasas de mortalidad en México, mejor utilizamos como referencia el high income y tomamos como límite inferior 10. También realizamos un reescalamiento de las tasas para no ocupar el valor real pues este resultaría muy pequeño y esto generaría errores en el proceso de optimización. Además, fijamos la pcota en 5% pues creemos que esto es cercano a la probabilidad de que la tasa de mortalidad esté fuera de este rango.*
 
 ```{r}
 gamma.limits <- function(x){
@@ -547,10 +547,10 @@ ver que nuestras creencias iniciales se ven coherentes.
 
 ggplot() +
 geom_histogram(aes(x = gamma.final), fill = '#00BFC4', alpha = .6) +
-geom_histogram(aes(x = tasas_mort$value*10000,na.rm=TRUE), fill = 'salmon', alpha = .6) +
-  xlim(0,20) + ylim(0,600)
+geom_histogram(aes(x = tasas_mort$value*10000), fill = 'salmon', alpha = .6) +
+xlab("tasa de mortalidad")
 ```
-*Nuestra distribución a priori se ve coherente.*
+*Nuestra distribución a priori parece ser coherente con los datos.*
 
 **Pregunta 12)** Utiliza un gráfico de dispersión para comparar las tasas
 observadas contra la población del municipio. ¿Qué observas? Utiliza los ejes en
@@ -578,7 +578,7 @@ tamaño $n = 10^3, 10^4, 10^5.$
 
 *De acuerdo con lo resuelto anteriormente, la predictiva previa es una binomial negativa.*
 $$p(X = k \, | \, \alpha, \beta) = \left(\frac{\beta}{\beta + 1}\right)^\alpha \left(\frac{1}{\beta + 1}\right)^k {\alpha + k -1 \choose k}$$
-*Utilicemos los parámetros $\alpha$ y $\beta$ recién encontrados.*
+*Utilizamos los parámetros* $\alpha$ *y* $\beta$ *recién encontrados y comparamos la fórmula enterior con la función de densidad de probabilidad que viene en la documentación de rnbinom para hallar las relaciones entre (r,p) y* $(\alpha, \beta)$
 ```{r, echo = FALSE, warning=FALSE}
 sim_3 <- rnbinom(1000, params.prior[1], 1/(params.prior[2]+1))
 sim_4 <- rnbinom(10000, params.prior[1], 1/(params.prior[2]+1))
@@ -588,7 +588,7 @@ ggplot() +
   geom_histogram(aes(x = sim_3), fill = 'salmon', alpha = .3) +
   geom_histogram(aes(x = sim_4), fill = 'purple', alpha = .3) +
   geom_histogram(aes(x = sim_5), fill = 'skyblue', alpha = .3) +
-  xlim(0,30)
+  xlab("tasa de mortalidad")
 ```
 
 **Pregunta 14)** Calcula los valores posteriores de las tasas de mortalidad bajo
