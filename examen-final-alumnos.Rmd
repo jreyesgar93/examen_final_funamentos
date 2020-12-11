@@ -184,19 +184,19 @@ $$p(y)
 *La última igualdad tiene la forma de una distribución Gamma con parámetros:*
 $$\alpha' = \alpha + k$$
 $$\beta' = \beta + 1$$
-*Sólo falta añadirle las constantes:*
+*Sólo falta añadirle las constantes de normalización:*
 $$p(y) = \frac{\beta^{\alpha}}{\Gamma(\alpha)k!} \int \theta^{\alpha + k -1} \, e^{-(\beta+1)\theta} d\theta = \frac{\beta^{\alpha}}{\Gamma(\alpha)k!} \int \frac{(\beta+1)^{\alpha+k}}{\Gamma(\alpha+k)} \frac{\Gamma(\alpha+k)}{\beta+1)^{\alpha+k}} \theta^{\alpha - 1} \, e^{-\beta \, \theta} d\theta$$
 $$\Rightarrow p(y) = \frac{\beta^{\alpha}}{\Gamma(\alpha)k!} \frac{\Gamma(\alpha+k)}{(\beta+1)^{\alpha+k}} \int \frac{(\beta+1)^{\alpha+k}}{\Gamma(\alpha+k)} \theta^{\alpha - 1} \, e^{-\beta \, \theta} d\theta = \frac{\beta^{\alpha}}{\Gamma(\alpha)k!} \frac{\Gamma(\alpha+k)}{(\beta+1)^{\alpha+k}} \int \textsf{Gamma}(\theta \, | \, \alpha', \beta') d\theta$$
-$$\Rightarrow p(y) = \frac{\beta^{\alpha}}{(\beta+1)^{\alpha+k}} \frac{\Gamma(\alpha+k)}{\Gamma(\alpha)k!} \int \textsf{Gamma}(\theta \, | \, \alpha', \beta') d\theta = \left(\frac{\beta}{\beta + 1}\right)^\alpha \left(\frac{1}{\beta + 1}\right)^k \frac{(\alpha+k-1)!}{(\alpha-1)!k!} \int \textsf{Gamma}(\theta \, | \, \alpha', \beta') d\theta$$
+$$\Rightarrow p(y) = \frac{\beta^{\alpha}}{(\beta+1)^{\alpha+k}} \frac{\Gamma(\alpha+k)}{\Gamma(\alpha)k!} = \left(\frac{\beta}{\beta + 1}\right)^\alpha \left(\frac{1}{\beta + 1}\right)^k \frac{(\alpha+k-1)!}{(\alpha-1)!k!}$$
 *Finalmente,*
-$$\Rightarrow p(y) = {\alpha + k -1 \choose k} \left(\frac{\beta}{\beta + 1}\right)^\alpha \left(\frac{1}{\beta + 1}\right)^k \int \textsf{Gamma}(\theta \, | \, \alpha', \beta') d\theta$$
+$$\Rightarrow p(y) = {\alpha + k -1 \choose k} \left(\frac{\beta}{\beta + 1}\right)^\alpha \left(\frac{1}{\beta + 1}\right)^k$$
 *Por lo tanto, la distribución predictiva previa de una distribución Poisson-Gamma es una Bonimial Negativa.*
 
 Verifica tu cálculo utilizando las reglas probabilidad condicional. En especifico,
 utiliza
 
 $$ p(y) = \frac{p(y|\theta)p(\theta)}{p(\theta|y)}.$$
-*Teniendo en cuenta que para calcular la posterior se usó la distribución Gamma con las reglas de actualización para una y:*
+*Teniendo en cuenta que para calcular la posterior se usó la distribución Gamma con las reglas de actualización para una y obternidas en la pregunta 1:*
 $$\alpha_1 = \alpha + y$$
 $$\beta_1 = \beta + 1$$
 *Entonces podemos sustituir en la regla de bayes nuestros resultados anteriores, tomando y = k.*
@@ -380,7 +380,7 @@ observado para la población del municipio $i$-ésimo.
 
 
 $$\lambda_i=\theta_i n_i$$
-donde $\theta_i$ es igual a la tasa individual de mortalidad por año en el municipio $i$ y $n_i$ la población total del municipio $i$. Al multiplicar ambas, obtenemos valor de $\lambda_i$ que representala tasa de mortalidad por neumonía en el municipio $i$
+*donde $\theta_i$ es igual a la tasa individual de mortalidad por año en el municipio $i$ y $n_i$ la población total del municipio $i$. Al multiplicar ambas, obtenemos valor de $\lambda_i$ que representa la tasa de mortalidad por neumonía en el municipio $i$*
 
 
 
@@ -412,14 +412,14 @@ defunciones_tran_2019 <- defunciones_tran %>%
 tasas_mort <- dplyr::full_join(demograficos,defunciones_tran_2019,by=c("entidad","municipio")) %>%
   select(entidad, municipio, pob_total, muertes_totales) %>%
   unite(col = region, seq(1:2), sep = "") %>%
-  mutate(value = muertes_totales / pob_total)# %>%
-  #replace_na(list(value = 0)) 
+  mutate(value = muertes_totales / pob_total) %>%
+  replace_na(list(value = 0)) 
 
 tasas_mort
 
 ```
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, message=FALSE}
 #calcular el 25% más bajo
 q1 <- quantile(tasas_mort$value)[2]
 q3 <- quantile(tasas_mort$value)[4]
@@ -490,24 +490,28 @@ no lineales por medio de la función `nleqslv::nleqslv`. Escribe tu razonamiento
 para seleccionar dichos valores. 
 
 ```{r elicitacion}
-limits <- c(1,3.4)
+limits <- c(1,5)
 
-pcota<-.5
+pcota <- 0.05
+```
 
+*Los límites se escogieron tomando en cuenta la información de la gráfica. En un principio, para el límite inferior se escogió el 5 pues existen países como Estonia donde la tasa de defunción por neumonía es muy baja y para el límite superior se escogió 50 pues a principios de los años 200 la tasa de defunciones por neumonía en América Latina y el Caribe superada las 40 muertes por 100 mil habitantes. Sin embargo, considerando que en este ejercicio queremos concentrarnos únicamente en México, consideramos el mismo límite superior pero para el inferior se decidió tomar de referencia la tasa de high income y así nuestro límite inferior queda de 10. También realizamos un reescalamiento de las tasas para no ocupar el valor real pues este resultaría muy pequeño y esto generaría errores en el proceso de optimización. Además, fijamos la pcota en 5% pues creemos que esto es cercano a la probabilidad de que la tasa de mortalidad esté fuera de este rango.*
+```{r}
 gamma.limits <- function(x){
   # reparametrizamos para que el problema sea mas "fácil" en términos numéricos.
   log_alpha <- x[1]
   log_beta  <- x[2]
   
   # definimos las cotas de probabilidad
-  p_cota <-0.25# define un valor adecuada
+  p_cota <-pcota # define un valor adecuada
    c(    pgamma(limits[1], exp(log_alpha), rate = exp(log_beta)) - p_cota,
     1 - pgamma(limits[2], exp(log_alpha), rate = exp(log_beta)) - p_cota)
 }
 
-initial_guess <- c(log(2), log(2))
+initial_guess <- c(log(1), log(1))
 
 results <- nleqslv(initial_guess, gamma.limits)
+results
 
 params.prior <- exp(results$x)
 
@@ -520,14 +524,16 @@ iniciales para el problema de optimización y con los finales de dicho algorimo.
 Esto te servirá de verificación que el método funciona adecuadamente.
 
 ```{r histogramas elicitacion}
-gamma.inicial<-rgamma(1000,exp(initial_guess[1]),exp(initial_guess[1]))
-gamma.final<-rgamma(1000,params.prior[1],params.prior[1])
+gamma.inicial <- rgamma(1000,exp(initial_guess[1]),exp(initial_guess[1]))
+gamma.final <- rgamma(1000,params.prior[1],params.prior[1])
 
 ggplot() +
-geom_histogram(aes(x = gamma.inicial), fill = 'salmon', alpha = .6) +
-geom_histogram(aes(x = gamma.final), fill = '#00BFC4', alpha = .6) 
+  geom_histogram(aes(x = gamma.inicial), fill = 'salmon', alpha = .6) +
+  geom_histogram(aes(x = gamma.final), fill = '#00BFC4', alpha = .6) + 
+  ggtitle("Distribución gamma inicial vs final")
+
 ggplot() +
-geom_histogram(aes(x = gamma.final), fill = '#00BFC4', alpha = .6) 
+  geom_histogram(aes(x = gamma.final), fill = '#00BFC4', alpha = .6) 
 
 ```
 
@@ -539,8 +545,9 @@ ver que nuestras creencias iniciales se ven coherentes.
 ```{r}
 
 ggplot() +
-geom_histogram(aes(x = gamma.final), fill = '#00BFC4', alpha = .6) +
-geom_histogram(aes(x = tasas_mort$value*10000,na.rm=TRUE), alpha = .6)
+geom_histogram(aes(x = gamma.final), fill = 'salmon', alpha = .6) +
+geom_histogram(aes(x = tasas_mort$value*10000,na.rm=TRUE), fill = '#00BFC4', alpha = .6) +
+  xlim(0,20)
 ```
 
 **Pregunta 12)** Utiliza un gráfico de dispersión para comparar las tasas
