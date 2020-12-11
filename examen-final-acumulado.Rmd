@@ -490,12 +490,12 @@ no lineales por medio de la función `nleqslv::nleqslv`. Escribe tu razonamiento
 para seleccionar dichos valores. 
 
 ```{r elicitacion}
-limits <- c(1,5)
+limits <- c(0.5,5)
 
 pcota <- 0.05
 ```
 
-*Los límites se escogieron tomando en cuenta la información de la gráfica. En un principio, para el límite inferior se escogió el 5 pues existen países como Estonia donde la tasa de defunción por neumonía es muy baja y para el límite superior se escogió 50 pues a principios de los años 200 la tasa de defunciones por neumonía en América Latina y el Caribe superada las 40 muertes por 100 mil habitantes. Sin embargo, considerando que en este ejercicio queremos concentrarnos únicamente en México, consideramos el mismo límite superior pero para el inferior se decidió tomar de referencia la tasa de high income y así nuestro límite inferior queda de 10. También realizamos un reescalamiento de las tasas para no ocupar el valor real pues este resultaría muy pequeño y esto generaría errores en el proceso de optimización. Además, fijamos la pcota en 5% pues creemos que esto es cercano a la probabilidad de que la tasa de mortalidad esté fuera de este rango.*
+*Los límites se escogieron tomando en cuenta la información de la gráfica. Para el límite inferior se escogió el 5 pues existen países como Estonia donde la tasa de defunción por neumonía es muy baja y para el límite superior se escogió 50 pues a principios de los años 2000 la tasa de defunciones por neumonía en América Latina y el Caribe superaba las 40 muertes por 100 mil habitantes. También realizamos un reescalamiento de las tasas para no ocupar el valor real pues este resultaría muy pequeño y esto generaría errores en el proceso de optimización. Además, fijamos la pcota en 5% pues creemos que esto es cercano a la probabilidad de que la tasa de mortalidad esté fuera de este rango.*
 
 ```{r}
 gamma.limits <- function(x){
@@ -546,8 +546,8 @@ ver que nuestras creencias iniciales se ven coherentes.
 ```{r}
 
 ggplot() +
-geom_histogram(aes(x = gamma.final), fill = 'salmon', alpha = .6) +
-geom_histogram(aes(x = tasas_mort$value*10000,na.rm=TRUE), fill = '#00BFC4', alpha = .6) +
+geom_histogram(aes(x = gamma.final), fill = '#00BFC4', alpha = .6) +
+geom_histogram(aes(x = tasas_mort$value*10000,na.rm=TRUE), fill = 'salmon', alpha = .6) +
   xlim(0,20) + ylim(0,600)
 ```
 *Nuestra distribución a priori se ve coherente.*
