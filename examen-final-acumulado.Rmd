@@ -493,7 +493,7 @@ no lineales por medio de la función `nleqslv::nleqslv`. Escribe tu razonamiento
 para seleccionar dichos valores. 
 
 ```{r elicitacion}
-limits <- c(0.05,0.4)
+limits <- c(0.5,4)
 
 pcota <- 0.05
 ```
@@ -529,7 +529,7 @@ Esto te servirá de verificación que el método funciona adecuadamente.
 
 ```{r histogramas elicitacion}
 gamma.inicial <- rgamma(3000,exp(initial_guess[1]),exp(initial_guess[2]))
-gamma.final <- rgamma(3000,params.prior[1],params.prior[2])
+gamma.final <- rgamma(3000,exp(params.prior[1]),exp(params.prior[2]))
 
 ggplot() +
   geom_histogram(aes(x = gamma.inicial), fill = 'salmon', alpha = .6) +
@@ -549,7 +549,7 @@ ver que nuestras creencias iniciales se ven coherentes.
 ```{r}
 
 ggplot() +
-geom_histogram(aes(x = gamma.final/1000), fill = '#00BFC4', alpha = .6) +
+geom_histogram(aes(x = gamma.final/10000), fill = '#00BFC4', alpha = .6) +
 geom_histogram(aes(x = tasas_mort$value), fill = 'salmon', alpha = .6) +
 xlab("tasa de mortalidad")
 ```
@@ -583,16 +583,35 @@ tamaño $n = 10^3, 10^4, 10^5.$
 $$p(X = k \, | \, \alpha, \beta) = \left(\frac{\beta}{\beta + 1}\right)^\alpha \left(\frac{1}{\beta + 1}\right)^k {\alpha + k -1 \choose k}$$
 *Utilizamos los parámetros* $\alpha$ *y* $\beta$ *recién encontrados y comparamos la fórmula enterior con la función de densidad de probabilidad que viene en la documentación de rnbinom para hallar las relaciones entre (r,p) y* $(\alpha, \beta)$
 ```{r, echo = FALSE, warning=FALSE}
-sim_3 <- rnbinom(1000, params.prior[1], 1/(params.prior[2]+1))
-sim_4 <- rnbinom(10000, params.prior[1], 1/(params.prior[2]+1))
-sim_5 <- rnbinom(100000, params.prior[1], 1/(params.prior[2]+1))
+# p = 1/(beta + 1)
+#sim_3 <- rnbinom(1000, params.prior[1], 1/(params.prior[2]+1))
+#sim_4 <- rnbinom(10000, params.prior[1], 1/(params.prior[2]+1))
+#sim_5 <- rnbinom(100000, params.prior[1], 1/(params.prior[2]+1))
+
+a <- exp(params.prior[1])
+b <- exp(params.prior[2])
+
+sim_3 <- rnbinom(1000, a, b/(1+b))
+sim_4 <- rnbinom(10000, a, b/(1+b))
+sim_5 <- rnbinom(100000, a, b/(1+b))
 
 ggplot() +
-  geom_histogram(aes(x = sim_3), fill = 'purple', alpha = .5) +
-  geom_histogram(aes(x = sim_4), fill = 'salmon', alpha = .3) +
-  geom_histogram(aes(x = sim_5), fill = 'skyblue', alpha = .3) +
+  geom_histogram(aes(x = sim_3/10000), fill = 'purple', alpha = .5) +
+  geom_histogram(aes(x = sim_4/10000), fill = 'salmon', alpha = .3) +
+  geom_histogram(aes(x = sim_5/10000), fill = 'skyblue', alpha = .3) +
   xlab("tasa de mortalidad")
+
 ```
+
+```{r, fig.asp=0.3, fig.width=10, message=FALSE}
+
+g1 <- ggplot() + geom_histogram(aes(x = sim_3/10000), fill = 'purple')
+g2 <- ggplot() + geom_histogram(aes(x = sim_4/10000), fill = 'salmon')
+g3 <- ggplot() + geom_histogram(aes(x = sim_5/10000), fill = 'skyblue')
+
+g1 + g2 + g3
+```
+
 
 **Pregunta 14)** Calcula los valores posteriores de las tasas de mortalidad bajo
 nuestro modelo bayesiano y compara con los estimadores de máxima verosimilitud. 
@@ -604,16 +623,19 @@ haces un grafico como el de la pregunta 12?
 $$\mathbb{E}[\theta | X] = \frac{\beta}{\beta + n} \, \mathbb{E}[\theta] + \frac{n}{\beta + n} \, \bar{y}$$
 *Y tomando los valores de beta y alpha encontrados anteriormente:*
 ```{r}
-
-a <- params.prior[1]
-b <- params.prior[2]
 prom <- mean(tasas_mort$value)
 n <- nrow(tasas_mort)
 esp <- a/b
 
 tasa_post <- ((b*esp) / (b+n) + (n*prom) / (b+n))
-tasa_post
 ```
+
+```{r}
+est_mv <- rpois(3000, esp)
+est_post <- rpois(3000, tasa_post)
+#no, pidos, lambda no es theta :s
+```
+
 
 **Pregunta 15)** Utiliza la distribución predictiva *posterior* para verificar
 el ajuste del modelo. Para esto, escoge tres municipios al azar de distintos
