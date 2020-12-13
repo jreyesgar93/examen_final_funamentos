@@ -410,6 +410,9 @@ podrías presentar esto como dos mapas separados.
 defunciones_por_anio <- defunciones_tran %>%
   mutate(muertes_totales = rowSums(defunciones_tran %>% select_if(is.numeric), na.rm = TRUE) / 5)
 
+# quitamos los municipios desconocidos
+defunciones_por_anio <- defunciones_por_anio[!(defunciones_por_anio$municipio == "999"),]
+
 tasas_mort <- dplyr::full_join(demograficos,defunciones_por_anio,by=c("entidad","municipio")) %>%
   select(entidad, municipio, pob_total, muertes_totales) %>%
   unite(col = region, seq(1:2), sep = "") %>%
@@ -490,12 +493,12 @@ no lineales por medio de la función `nleqslv::nleqslv`. Escribe tu razonamiento
 para seleccionar dichos valores. 
 
 ```{r elicitacion}
-limits <- c(0.1,0.5)
+limits <- c(0.05,0.4)
 
 pcota <- 0.05
 ```
 
-*Los límites se escogieron tomando en cuenta la información de la gráfica. En un principio, para el límite inferior se escogió el 5 pues existen países como Estonia donde la tasa de defunción por neumonía es muy baja y para el límite superior se escogió 50 pues a principios de los años 2000 la tasa de defunciones por neumonía en América Latina y el Caribe superaba las 40 muertes por 100 mil habitantes. Sin embargo, cómo tratamos de estimar las tasas de mortalidad en México, mejor utilizamos como referencia el high income y tomamos como límite inferior 10. También realizamos un reescalamiento de las tasas para no ocupar el valor real pues este resultaría muy pequeño y esto generaría errores en el proceso de optimización. Además, fijamos la pcota en 5% pues creemos que esto es cercano a la probabilidad de que la tasa de mortalidad esté fuera de este rango.*
+*Los límites se escogieron tomando en cuenta la información de la gráfica. En un principio, para el límite inferior se escogió el 5 pues existen países como Estonia donde la tasa de defunción por neumonía es muy baja y para el límite superior se escogió 50 pues a principios de los años 2000 la tasa de defunciones por neumonía en América Latina y el Caribe superaba las 40 muertes por 100 mil habitantes. Sin embargo, cómo tratamos de estimar las tasas de mortalidad en México actualmente, utilizamos para el superior 40. También realizamos un reescalamiento de las tasas (multiplicamos por mil) para no ocupar el valor real pues este resultaría muy pequeño y esto generaría errores en el proceso de optimización. Además, fijamos la pcota en 5% pues creemos que esto es cercano a la probabilidad de que la tasa de mortalidad esté fuera de este rango.*
 
 ```{r}
 gamma.limits <- function(x){
@@ -525,8 +528,8 @@ iniciales para el problema de optimización y con los finales de dicho algorimo.
 Esto te servirá de verificación que el método funciona adecuadamente.
 
 ```{r histogramas elicitacion}
-gamma.inicial <- rgamma(1000,exp(initial_guess[1]),exp(initial_guess[2]))
-gamma.final <- rgamma(1000,params.prior[1],params.prior[2])
+gamma.inicial <- rgamma(3000,exp(initial_guess[1]),exp(initial_guess[2]))
+gamma.final <- rgamma(3000,params.prior[1],params.prior[2])
 
 ggplot() +
   geom_histogram(aes(x = gamma.inicial), fill = 'salmon', alpha = .6) +
@@ -546,11 +549,11 @@ ver que nuestras creencias iniciales se ven coherentes.
 ```{r}
 
 ggplot() +
-geom_histogram(aes(x = gamma.final), fill = '#00BFC4', alpha = .6) +
-geom_histogram(aes(x = tasas_mort$value*10000), fill = 'salmon', alpha = .6) +
+geom_histogram(aes(x = gamma.final/1000), fill = '#00BFC4', alpha = .6) +
+geom_histogram(aes(x = tasas_mort$value), fill = 'salmon', alpha = .6) +
 xlab("tasa de mortalidad")
 ```
-*Nuestra distribución a priori parece ser coherente con los datos.*
+*Nuestra distribución a priori parece ser más o menos coherente con los datos.*
 
 **Pregunta 12)** Utiliza un gráfico de dispersión para comparar las tasas
 observadas contra la población del municipio. ¿Qué observas? Utiliza los ejes en
@@ -585,8 +588,8 @@ sim_4 <- rnbinom(10000, params.prior[1], 1/(params.prior[2]+1))
 sim_5 <- rnbinom(100000, params.prior[1], 1/(params.prior[2]+1))
 
 ggplot() +
-  geom_histogram(aes(x = sim_3), fill = 'salmon', alpha = .3) +
-  geom_histogram(aes(x = sim_4), fill = 'purple', alpha = .3) +
+  geom_histogram(aes(x = sim_3), fill = 'purple', alpha = .5) +
+  geom_histogram(aes(x = sim_4), fill = 'salmon', alpha = .3) +
   geom_histogram(aes(x = sim_5), fill = 'skyblue', alpha = .3) +
   xlab("tasa de mortalidad")
 ```
@@ -597,9 +600,19 @@ Para esto puedes utilizar un gráfico de dispersión cómo el visto en clase o l
 anteriores. ¿Observas regularización en nuestras estimaciones? ¿Qué observas si
 haces un grafico como el de la pregunta 12?
 
+*De acuerdo con la pregunta 1), las medias posteriores están dadas por:*
+$$\mathbb{E}[\theta | X] = \frac{\beta}{\beta + n} \, \mathbb{E}[\theta] + \frac{n}{\beta + n} \, \bar{y}$$
+*Y tomando los valores de beta y alpha encontrados anteriormente:*
 ```{r}
 
+a <- params.prior[1]
+b <- params.prior[2]
+prom <- mean(tasas_mort$value)
+n <- nrow(tasas_mort)
+esp <- a/b
 
+tasa_post <- ((b*esp) / (b+n) + (n*prom) / (b+n))
+tasa_post
 ```
 
 **Pregunta 15)** Utiliza la distribución predictiva *posterior* para verificar
